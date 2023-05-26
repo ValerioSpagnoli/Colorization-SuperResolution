@@ -3,3 +3,6 @@
 
 # ignore data folder
 data/
+
+# ignore weights folder
+weights/

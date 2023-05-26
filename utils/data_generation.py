@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 
 
+
 def data_generation(path_image=None, destination_folder=None, textures_folder=None, threshold=0.3, gaussian_noise=True, black_and_white=False, sepia=False, k=0.5):
 
     '''
