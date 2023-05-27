@@ -1,12 +1,10 @@
 # In this file is defined the class of the dataset for PikFix Model
 
 from torch.utils.data import Dataset
-from skimage import io
 import os
 import pandas as pd
-import torch
+from PIL import Image
 import torchvision.transforms as transforms
-import cv2
 
 
 class PikFixData(Dataset):
@@ -34,32 +32,35 @@ class PikFixData(Dataset):
         ref_img_path = os.path.join(self.root_dir, self.img_labels.iloc[idx, 1])
         res_img_path = os.path.join(self.root_dir, self.img_labels.iloc[idx, 2])
 
-        # Read respective images
-        org_img = io.imread(org_img_path)
-        ref_img = io.imread(ref_img_path)
-        res_img = io.imread(res_img_path)
-        
-        org_img = cv2.resize(org_img, dsize=resize(width=org_img.shape[1], height=org_img.shape[0], max_size=self.max_size))
-        ref_img = cv2.resize(ref_img, dsize=resize(width=ref_img.shape[1], height=ref_img.shape[0], max_size=self.max_size))
-        res_img = cv2.resize(res_img, dsize=resize(width=res_img.shape[1], height=res_img.shape[0], max_size=self.max_size))
+        org_img = Image.open(org_img_path)
+        ref_img = Image.open(ref_img_path)
+        res_img = Image.open(res_img_path)
 
+        org_img = org_img.resize(resize_to_maxsize(width=org_img.size[0], height=org_img.size[1], max_size=self.max_size))
+        ref_img = ref_img.resize(resize_to_maxsize(width=ref_img.size[0], height=ref_img.size[1], max_size=self.max_size))
+        res_img = res_img.resize(resize_to_maxsize(width=res_img.size[0], height=res_img.size[1], max_size=self.max_size))
 
         # Transform them (if needed)
         if self.transform is not None:
+            
             org_img = self.transform(org_img)
             ref_img = self.transform(ref_img)
             res_img = self.transform(res_img)   
 
+
         # Return tuple (original, reference, restored)
-        return org_img, ref_img, res_img
+        return (org_img, ref_img, res_img)
     
 
-def resize(width=None, height=None, max_size=256):
+def resize_to_maxsize(width=None, height=None, max_size=256):
     if width > height:
         new_width = max_size
         new_height = int(height*(new_width/width))
+        new_height = new_height - (new_height%8)
+
     else:
         new_height = max_size
         new_width = int(width * (new_height / height))
+        new_width = new_width - (new_width%8)
 
     return new_width, new_height

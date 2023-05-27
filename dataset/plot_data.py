@@ -1,5 +1,6 @@
 # Useful function to plot "n" random samples in a dataset
 
+import torch
 import matplotlib.pyplot as plt
 import random
 import numpy as np
@@ -35,6 +36,7 @@ def plot_random_samples(n, dataset):
 
 
 def imshow(img, title=None):
+
     img = img.numpy().transpose((1, 2, 0))
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
