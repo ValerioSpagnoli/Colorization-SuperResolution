@@ -36,10 +36,16 @@ class PikFixData(Dataset):
         ref_img = Image.open(ref_img_path)
         res_img = Image.open(res_img_path)
 
-        org_img = org_img.resize(resize_to_maxsize(width=org_img.size[0], height=org_img.size[1], max_size=self.max_size))
-        ref_img = ref_img.resize(resize_to_maxsize(width=ref_img.size[0], height=ref_img.size[1], max_size=self.max_size))
-        res_img = res_img.resize(resize_to_maxsize(width=res_img.size[0], height=res_img.size[1], max_size=self.max_size))
+        width = org_img.size[0]
+        height = org_img.size[1]
 
+        org_img = org_img.resize(resize_to_maxsize(width=width, height=height, max_size=self.max_size))
+        ref_img = ref_img.resize(resize_to_maxsize(width=width, height=height, max_size=self.max_size))
+        res_img = res_img.resize(resize_to_maxsize(width=width, height=height, max_size=self.max_size))
+
+        # org_img = org_img.resize(resize_to_maxsize(width=org_img.size[0], height=org_img.size[1], max_size=self.max_size))
+        # ref_img = ref_img.resize(resize_to_maxsize(width=ref_img.size[0], height=ref_img.size[1], max_size=self.max_size))
+        # res_img = res_img.resize(resize_to_maxsize(width=res_img.size[0], height=res_img.size[1], max_size=self.max_size))
 
         # Resise with heigh = width
         #org_img = org_img.resize((self.max_size,self.max_size))
