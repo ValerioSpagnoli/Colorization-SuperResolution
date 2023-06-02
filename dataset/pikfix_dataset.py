@@ -40,6 +40,13 @@ class PikFixData(Dataset):
         ref_img = ref_img.resize(resize_to_maxsize(width=ref_img.size[0], height=ref_img.size[1], max_size=self.max_size))
         res_img = res_img.resize(resize_to_maxsize(width=res_img.size[0], height=res_img.size[1], max_size=self.max_size))
 
+
+        # Resise with heigh = width
+        #org_img = org_img.resize((self.max_size,self.max_size))
+        #ref_img = ref_img.resize((self.max_size,self.max_size))
+        #res_img = res_img.resize((self.max_size,self.max_size))
+
+
         # Transform them (if needed)
         if self.transform is not None:
             

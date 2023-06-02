@@ -2,7 +2,7 @@ import os
 import csv
 
 # Define dataset root directory
-dataset_root = "../data/"
+dataset_root = "./data/"
 
 # Define original, reference, and restored folders
 img_folder = os.path.join(dataset_root, "img")
