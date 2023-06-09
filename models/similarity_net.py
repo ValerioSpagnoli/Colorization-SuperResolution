@@ -113,9 +113,9 @@ class SimilarityNet(nn.Module):
         if DEBUG: print("Conv out ref: ", [t.shape for t in fm_ref]) # DEBUG PRINT
 
         # Compute M weighted concatenations and apply convolution to it
-        M_img = [self.W_img(torch.cat([self.A[0,i,j]*F.interpolate(fm_img[j], size=fm_img[i].shape[-2:], mode='bilinear') for j in range(4)], dim=1)) for i in range(4)]
+        M_img = [self.W_img(torch.cat([F.interpolate(self.A[0,i,j]*fm_img[j], size=fm_img[i].shape[-2:], mode='bilinear') for j in range(4)], dim=1)) for i in range(4)]
         if DEBUG: print("\nM img: ", [t.shape for t in M_img]) # DEBUG PRINT
-        M_ref = [self.W_ref(torch.cat([self.A[1,i,j]*F.interpolate(fm_ref[j], size=fm_ref[i].shape[-2:], mode='bilinear') for j in range(4)], dim=1)) for i in range(4)]
+        M_ref = [self.W_ref(torch.cat([F.interpolate(self.A[1,i,j]*fm_ref[j], size=fm_ref[i].shape[-2:], mode='bilinear') for j in range(4)], dim=1)) for i in range(4)]
         if DEBUG: print("M res: ", [t.shape for t in M_ref]) # DEBUG PRINT
 
         # Reshape from 3D to 2D (from HxWxC to HWxC)
@@ -130,14 +130,8 @@ class SimilarityNet(nn.Module):
         norm_I = [torch.norm(I[i], p=2, dim=1, keepdim=True) + sys.float_info.epsilon for i in range(4)]
         norm_R = [torch.norm(R[i], p=2, dim=1, keepdim=True) + sys.float_info.epsilon for i in range(4)]
 
-        # Compute ((Mi - mean(Mi))*(Mr - mean(Mr))) / (norm(Mi - mean(Mi)) * (norm(Mr - mean(Mr)))
-        sm = [torch.matmul(torch.div(I[i], norm_I[i]).permute(0, 2, 1), torch.div(R[i], norm_R[i])).unsqueeze(dim=1) for i in range(4)]
-
-        # Apply max along x-axis
-        sm = [torch.max(sm[i], dim=-1, keepdim=True)[0] for i in range(4)]
-
-        # Reshape to (WxH) (same W,H size of feature maps)
-        sm = [sm[i].view(1, 1, fm_img[i].shape[-2],  fm_img[i].shape[-1]) for i in range(4)]
+        # Compute softmax((Mi - mean(Mi))*(Mr - mean(Mr))) / (norm(Mi - mean(Mi)) * (norm(Mr - mean(Mr)))
+        sm = [F.softmax(torch.matmul(torch.div(I[i], norm_I[i]).permute(0, 2, 1), torch.div(R[i], norm_R[i])).unsqueeze(dim=1), dim=-1) for i in range(4)]
         if DEBUG: print("\nSM: ", [t.shape for t in sm])
 
         return sm
