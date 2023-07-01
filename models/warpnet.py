@@ -110,9 +110,6 @@ class WarpNet(nn.Module):
         tensor_AB = x[:,1:3,:,:]
         batch_size = tensor_AB.shape[0]
 
-        # Initialize result
-        res = list()
-
 
         ## SIMILARITY MAP COMPUTATION ##
 
@@ -147,37 +144,30 @@ class WarpNet(nn.Module):
         norm_R = [torch.norm(R[i], p=2, dim=1, keepdim=True) + sys.float_info.epsilon for i in range(4)]
 
         # Compute softmax((Mi - mean(Mi))*(Mr - mean(Mr))) / (norm(Mi - mean(Mi)) * (norm(Mr - mean(Mr)))
-        sim_maps = [F.softmax(torch.matmul(torch.div(I[i], norm_I[i]).permute(0, 2, 1), torch.div(R[i], norm_R[i])).unsqueeze(dim=1), dim=-1) for i in range(4)]
-        if DEBUG: print("\nSM: ", [t.shape for t in sim_maps])
+        sm = [F.softmax(torch.matmul(torch.div(I[i], norm_I[i]).permute(0, 2, 1), torch.div(R[i], norm_R[i])).unsqueeze(dim=1), dim=-1) for i in range(4)]
+        if DEBUG: print("\nSM: ", [t.shape for t in sm])
 
 
         ## HISTOGRAM COMPUTATION ##
-
-        # For each of the 4 similarity maps, compute the respective histogram
-        for i, sm in enumerate(sim_maps):
-            if DEBUG: print('\nCurrent sm shape:', sm[0].shape)
             
-            # Downsample the AB channels tensor
-            AB_down = F.adaptive_avg_pool2d(tensor_AB, (tensor_AB.shape[2] // 2**(2+i), tensor_AB.shape[3] // 2**(2+i)))
-            if DEBUG: print("AB channels reshape:", AB_down.shape)
+        # Downsample the AB channels tensors
+        AB_down = [F.adaptive_avg_pool2d(tensor_AB, (tensor_AB.shape[2] // 2**(2+i), tensor_AB.shape[3] // 2**(2+i))) for i in range(4)]
+        if DEBUG: print("\nAB channels reshape:", [t.shape for t in AB_down])
 
-            # Compute the histogram
-            hist = self.hist_layer(AB_down, AB_down)
-            if DEBUG: print("Hist shape:", hist.shape)
+        # Compute the histograms
+        hist = [self.hist_layer(AB_down[i], AB_down[i]) for i in range(4)]
+        if DEBUG: print("\nHist shape:", [t.shape for t in hist])
 
-            # Reshape histogram to HWxK and permute (to allow matrix multiplication)            
-            reshaped_hist = hist.view(batch_size, 512, -1).permute(0, 2, 1)
-            if DEBUG: print("Hist reshape to HWxK:", reshaped_hist.shape)
+        # Reshape histogram to HWxK and permute (to allow matrix multiplication)            
+        reshaped_hist = [hist[i].view(batch_size, 512, -1).permute(0, 2, 1) for i in range(4)]
+        if DEBUG: print("Hist reshape to HWxK:", [t.shape for t in reshaped_hist])
 
-            # Multiply similarity map with histogram and permute (to restore order)
-            y_hist = torch.matmul(sm[0], reshaped_hist).permute(0, 2, 1).contiguous()
-            if DEBUG: print("y_hist shape:", y_hist.shape)
+        # Multiply similarity map with histogram and permute (to restore order)
+        y_hist = [torch.matmul(sm[i][0], reshaped_hist[i]).permute(0, 2, 1).contiguous() for i in range(4)]
+        if DEBUG: print("\ny_hist shape:", [t.shape for t in y_hist])
 
-            # Reshape to HxWxK
-            y_hist = y_hist.view(batch_size, 512, hist.shape[2], hist.shape[3])
-            if DEBUG: print("y_hist reshaped:", y_hist.shape)
+        # Reshape to HxWxK
+        reshaped_y_hist = [y_hist[i].view(batch_size, 512, hist[i].shape[2], hist[i].shape[3]) for i in range(4)]
+        if DEBUG: print("y_hist reshaped:", [t.shape for t in reshaped_y_hist])
 
-            # Append to the result the tuple (similarity_map, histogram)
-            res.append((sm, y_hist))
-
-        return res
+        return (sm, reshaped_y_hist)
